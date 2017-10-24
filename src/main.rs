@@ -2,8 +2,11 @@ use std::io::{Write, Read, BufReader, BufRead};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
-extern crate httparse;
+//extern crate httparse;
 
+/*
+//this is unused, placed here for archiving purpose
+//if you wanna use this, stream are used without borrowing
 fn read_request_head(stream: &TcpStream) -> Vec<u8> {
     let mut reader = BufReader::new(stream);
     let mut buff = Vec::new();
@@ -48,13 +51,14 @@ fn handle_request(stream: TcpStream) {
         }
     }
 }
+*/
 
-fn send_response_hello(mut stream: TcpStream) {
+fn send_response_hello(mut stream: &TcpStream) {
     let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body>Hello world</body></html>\r\n";
     stream.write(response.as_bytes()).expect("Response failed");
 }
 
-fn send_response_hello_to(mut stream: TcpStream, name: String) {
+fn send_response_hello_to(mut stream: &TcpStream, name: String) {
     let res_1 = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body>Hello ";
     let res_2 = name;
     let res_3 = "</body></html>\r\n";
@@ -63,7 +67,7 @@ fn send_response_hello_to(mut stream: TcpStream, name: String) {
     stream.write(response.as_bytes()).expect("Response failed");
 }
 
-fn send_response_multiplication(mut stream: TcpStream, op1_: &str, op2_: &str) {
+fn send_response_multiplication(mut stream: &TcpStream, op1_: &str, op2_: &str) {
     let op1: i32 = op1_.parse().unwrap(); 
     let op2: i32 = op2_.parse().unwrap();
     let result = op1*op2;
@@ -76,7 +80,7 @@ fn send_response_multiplication(mut stream: TcpStream, op1_: &str, op2_: &str) {
     stream.write(response.as_bytes()).expect("Response failed");
 }
 
-fn send_response_error(mut stream: TcpStream) {
+fn send_response_error(mut stream: &TcpStream) {
     let response = b"HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body>500 - Server Error</body></html>\r\n";
     stream.write(response).expect("Write failed");
 }
@@ -102,18 +106,16 @@ fn main() {
     }
 }
 
-/*
-//this is unused, placed here for archiving purpose
 fn handle_request(stream: TcpStream) {
-    let stream_clone = stream.try_clone().unwrap();
-    let mut reader = BufReader::new(stream);
+    //let stream_clone = stream.try_clone().unwrap();
+    let mut reader = BufReader::new(&stream);
 
     for (index, line) in reader.by_ref().lines().enumerate() {
         if index == 0 {
             if let Ok(ref l) = line {
                 let request = &*l;
                 let reqs: Vec<&str> = request.split(" ").collect();
-                route_request(stream_clone, reqs[1]);
+                route_request(&stream, reqs[1]);
             }
         }
 
@@ -125,7 +127,7 @@ fn handle_request(stream: TcpStream) {
     //send_response_hello(reader.into_inner());
 }
 
-fn route_request(stream: TcpStream, path: &str) {
+fn route_request(stream: &TcpStream, path: &str) {
     if path.starts_with("/numbers") {
         let y = &path[9..];
         let args: Vec<&str> = y.split("&").collect();
@@ -134,8 +136,14 @@ fn route_request(stream: TcpStream, path: &str) {
         let arg2_: Vec<&str> = args[1].split("=").collect();
         let arg2 = arg2_[1];
 
-        send_response_multiplication(stream, arg1, arg2);
+        send_response_multiplication(&stream, arg1, arg2);
+    } else if path.starts_with("/hello") {
+        let x = &path[7..];
+        match x {
+            "" => send_response_hello(&stream),
+            _ => send_response_hello_to(&stream, String::from(x))
+        }
+    } else {
+        send_response_error(&stream);
     }
-
 }
-*/
