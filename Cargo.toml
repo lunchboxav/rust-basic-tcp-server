@@ -1,0 +1,7 @@
+[package]
+name = "simple-server"
+version = "0.1.0"
+authors = ["Adityo Pratomo <kotakmakan@yahoo.com>"]
+
+[dependencies]
+httparse = "1.2.1"
